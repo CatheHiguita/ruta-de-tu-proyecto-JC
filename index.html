@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruta de tu Proyecto — Jóvenes creaTIvos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600&f[]=clash-grotesk@400,500&display=swap">
+<style>
+  :root{
+    /* Sofka brand book v1 2026 */
+    --obsidian:#121212;
+    --orange:#EA7307;
+    --orange-dim:#c05f04;
+    --light:#EFEAE4;      /* sofka-light */
+    --dark-neutral:#A19381;
+    --green:#33A958;       /* sofka-positive */
+    --warning:#AD931A;     /* sofka-warning */
+    --info:#004BD8;
+    --card:#FFFFFF;
+    --ink:#181511;
+    --ink-soft:#736A5F;
+    --line:#E1DAD0;
+    --warn-bg:#FBF4DE;
+    --warn-line:#E9D89A;
+    --warn-ink:#7A5F0E;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0; touch-action:manipulation;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--light);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Clash Display',sans-serif;}
+
+  header{
+    background:var(--obsidian);
+    color:#fff;
+    padding:32px 24px 28px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 85% -10%, rgba(234,115,7,0.18), transparent 45%);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.06em;
+    color:var(--dark-neutral);
+    margin:0 0 10px;
+  }
+  header h1{
+    font-family:'Clash Display',sans-serif;
+    font-size:clamp(24px,4vw,34px);
+    margin:0 0 6px;
+    font-weight:700;
+  }
+  header p.sub{
+    font-family:'Clash Grotesk','Inter',sans-serif;
+    margin:0;
+    color:#D8D2C8;
+    font-size:16px;
+    max-width:560px;
+    line-height:1.5;
+  }
+
+  .track-toggle{
+    margin-top:22px;
+    display:inline-flex;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:999px;
+    padding:4px;
+    position:relative;
+    z-index:1;
+  }
+  .track-toggle button{
+    border:none;
+    background:transparent;
+    color:#D8D2C8;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .track-toggle button.active{
+    background:var(--orange);
+    color:#1B2A4A;
+  }
+
+  main{
+    max-width:920px;
+    margin:0 auto;
+    padding:36px 24px 80px;
+  }
+
+  .progress-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:28px;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .progress-row .label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .progress-bar-track{
+    flex:1;
+    min-width:160px;
+    height:6px;
+    background:var(--line);
+    border-radius:99px;
+    overflow:hidden;
+  }
+  .progress-bar-fill{
+    height:100%;
+    background:var(--green);
+    border-radius:99px;
+    transition:width .4s ease;
+    width:0%;
+  }
+
+  /* --- the git-log path --- */
+  .path{
+    position:relative;
+    padding-left:6px;
+  }
+  .node-row{
+    display:flex;
+    gap:20px;
+    position:relative;
+  }
+  .rail{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:28px;
+    flex-shrink:0;
+  }
+  .dot{
+    width:26px;height:26px;
+    border-radius:50%;
+    border:3px solid var(--line);
+    background:var(--card);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;
+    z-index:1;
+    transition:all .25s ease;
+    flex-shrink:0;
+  }
+  .connector{
+    width:2px;
+    flex:1;
+    background:var(--line);
+    min-height:28px;
+  }
+  .node-row.done .dot{ border-color:var(--green); background:var(--green); color:#fff; }
+  .node-row.done .connector{ background:var(--green); }
+  .node-row.current .dot{ border-color:var(--orange); box-shadow:0 0 0 5px rgba(234,115,7,0.18); }
+  .node-row.locked .dot{ opacity:.5; }
+  .node-row.locked .card-title{ opacity:.5; }
+
+  .card-wrap{ flex:1; padding-bottom:22px; }
+  .topic-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px 18px;
+    cursor:pointer;
+    transition:box-shadow .2s ease, border-color .2s ease;
+  }
+  .node-row.locked .topic-card{ cursor:not-allowed; }
+  .node-row.current .topic-card{ border-color:var(--orange); box-shadow:0 3px 14px rgba(234,115,7,0.14); }
+  .node-row.done .topic-card{ border-color:#c9ead2; }
+  .card-top{ display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .card-title{
+    font-family:'Clash Display',sans-serif;
+    font-weight:600;
+    font-size:16px;
+    margin:0;
+  }
+  .why-btn{
+    display:inline-block;
+    margin-top:8px;
+    background:none;
+    border:none;
+    padding:0;
+    font-size:12px;
+    color:var(--orange-dim);
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+  }
+  .why-text{
+    margin:8px 0 0;
+    font-size:13.5px;
+    line-height:1.5;
+    color:var(--ink-soft);
+    background:var(--light);
+    border-left:2px solid var(--orange);
+    padding:9px 12px;
+    border-radius:0 8px 8px 0;
+  }
+  .card-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .node-row.done .card-status{ color:var(--green); }
+  .node-row.current .card-status{ color:var(--orange-dim); }
+
+  /* expanded detail panel */
+  .detail{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+    display:none;
+  }
+  .detail.open{ display:block; }
+  .q{
+    font-size:15px;
+    font-weight:600;
+    margin:0 0 12px;
+  }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    padding:11px 16px;
+    min-height:44px;
+    border-radius:9px;
+    border:1.5px solid var(--obsidian);
+    background:#fff;
+    color:var(--obsidian);
+    cursor:pointer;
+    touch-action:manipulation;
+    transition:all .15s ease;
+  }
+  .btn:hover{ background:var(--obsidian); color:#fff; }
+  .btn.primary{ background:var(--orange); border-color:var(--orange); color:#1B2A4A; }
+  .btn.primary:hover{ background:var(--orange-dim); border-color:var(--orange-dim); color:#fff;}
+
+  .steps-box{
+    background:var(--light);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .steps-box ol{ margin:0; padding-left:18px; }
+  .steps-box li{ margin-bottom:7px; font-size:14px; line-height:1.5; }
+  .steps-box li:last-child{ margin-bottom:0; }
+  .resource-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:10px;
+  }
+
+  .mentor-box{
+    background:var(--warn-bg);
+    border:1px solid var(--warn-line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .mentor-box p{ margin:0 0 6px; font-size:14px; color:var(--warn-ink); line-height:1.5; }
+  .mentor-box .session{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--warn-ink);
+    font-weight:600;
+  }
+
+  .done-banner{
+    margin-top:30px;
+    background:var(--obsidian);
+    color:#fff;
+    border-radius:14px;
+    padding:26px 24px;
+    text-align:center;
+    display:none;
+  }
+  .done-banner.show{ display:block; }
+  .done-banner h3{ font-family:'Clash Display',sans-serif; margin:0 0 6px; font-size:20px; }
+  .done-banner p{ margin:0; color:#D8D2C8; font-size:14px; }
+
+  footer{
+    text-align:center;
+    padding:20px;
+    font-size:12px;
+    color:var(--ink-soft);
+    font-family:'JetBrains Mono',monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">jóvenes crea<span style="color:var(--orange)">_</span>TIvos · 2026</p>
+  <h1 class="display">Ruta de tu proyecto<span style="color:var(--orange)">_</span></h1>
+  <p class="sub">Revisa en qué punto vas. Si algo no te queda claro, aquí mismo tienes el paso a paso — y si aún así te trabas, te decimos a qué mentoría ir.</p>
+  <div class="track-toggle" id="trackToggle">
+    <button data-track="basico" class="active">Básico</button>
+    <button data-track="avanzado">Avanzado</button>
+  </div>
+</header>
+
+<main>
+  <div class="progress-row">
+    <span class="label mono" id="progressLabel">0 / 5 checkpoints</span>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="path" id="path"></div>
+
+  <div class="done-banner" id="doneBanner">
+    <h3>🎉 Tu proyecto está al día</h3>
+    <p>Completaste todos los checkpoints de esta ruta. Sigue así en tu próxima sesión.</p>
+  </div>
+</main>
+
+<footer>local_state · no se guarda al cerrar la pestaña · vuelve a marcar tus avances cada semana</footer>
+
+<script>
+const CHECKPOINTS = [
+  {
+    id:"git",
+    title:"GitHub: tu proyecto está subido",
+    why:"Sin repositorio, tu progreso no queda guardado en ningún lado y no puedes mostrar tu avance real. Es la base para todo lo que sigue.",
+    question:"¿Ya subiste tu proyecto a GitHub?",
+    steps:[
+      "Instala Git en tu computador (si usas un equipo del salón, pregunta si ya está instalado).",
+      "Crea una cuenta en GitHub.com si aún no tienes una.",
+      "Crea un repositorio nuevo con el nombre de tu proyecto.",
+      "En tu carpeta de proyecto, corre: git init",
+      "Corre: git add . y luego git commit -m \"primer commit\"",
+      "Conecta tu repo con: git remote add origin [link-de-tu-repo]",
+      "Sube tus archivos con: git push -u origin main"
+    ],
+    resource:"Learn Git Branching — practica los comandos sin miedo a romper nada",
+    mentor:{name:"Kevin Galarza", date:"20/08/2026", time:"6:30 pm", topic:"Git y GitHub (instalación, comandos básicos, subir proyecto)"}
+  },
+  {
+    id:"html",
+    title:"HTML: estructura semántica lista",
+    why:"Una estructura clara es lo que le permite a cualquiera (incluido tú en un mes) entender de qué trata cada parte de tu proyecto con solo mirar el código.",
+    question:"¿Tu proyecto ya tiene una estructura HTML semántica (header, main, section, footer)?",
+    steps:[
+      "Revisa que tu página use etiquetas con significado: <header>, <nav>, <main>, <section>, <footer> — no solo <div> para todo.",
+      "Cada sección de tu idea de negocio debe tener su propia etiqueta <section>.",
+      "Usa <h1> una sola vez por página, y <h2>/<h3> para los subtítulos en orden.",
+      "Verifica que las imágenes tengan atributo alt describiendo qué muestran."
+    ],
+    resource:"MDN — Elementos semánticos de HTML5",
+    mentor:null,
+    supportLink:{label:"MDN — Elementos semánticos de HTML5", note:"Repasa ahí los ejemplos de header/main/section/footer y compáralos con tu propio código."}
+  },
+  {
+    id:"box",
+    title:"CSS: box model aplicado",
+    why:"El box model es la razón por la que las cosas se ven 'pegadas' o descuadradas. Entenderlo bien te ahorra horas de andar moviendo píxeles a ciegas.",
+    question:"¿Ya aplicaste padding, margin y border de forma consciente en tu proyecto?",
+    steps:[
+      "Identifica 3 elementos de tu página que se vean 'pegados' o descuadrados.",
+      "Agrega box-sizing: border-box; a tu hoja de estilos (idealmente a todo con *).",
+      "Ajusta el padding interno de tarjetas o botones para que el contenido respire.",
+      "Usa margin para separar bloques entre sí, no para separar contenido interno."
+    ],
+    resource:"CSS Tricks — The Box Model",
+    mentor:{name:"Johan Ramirez", date:"20/08/2026", time:"6:30 pm", topic:"CSS: Box model / padding / margin / border"}
+  },
+  {
+    id:"responsive",
+    title:"CSS: diseño responsivo (media queries)",
+    why:"La mayoría de tus usuarios reales van a abrir tu proyecto desde el celular. Si no es responsivo, pierdes a la mayoría de tu público desde el primer segundo.",
+    question:"¿Tu proyecto se ve bien tanto en celular como en computador?",
+    steps:[
+      "Abre tu proyecto y reduce la ventana del navegador (o revísalo desde tu celular).",
+      "Identifica qué se rompe: texto muy grande, imágenes que se salen, columnas apretadas.",
+      "Agrega un media query, por ejemplo: @media (max-width: 600px) { ... }",
+      "Dentro de ese bloque, ajusta tamaños de fuente, anchos y organización en columna."
+    ],
+    resource:"freeCodeCamp Español — Diseño responsivo",
+    mentor:{name:"Johan Ramirez", date:"27/08/2026", time:"6:30 pm", topic:"CSS: Media Queries / diseño responsivo"}
+  },
+  {
+    id:"flexbox",
+    title:"CSS: Flexbox para tu layout",
+    why:"Flexbox es lo que usa la mayoría de sitios reales para organizar menús, tarjetas y formularios sin trucos raros. Dominarlo te ahorra mucho CSS innecesario.",
+    question:"¿Usaste Flexbox para organizar alguna sección de tu proyecto (menú, tarjetas, formulario)?",
+    steps:[
+      "Elige una sección con varios elementos en fila o columna (ej. tarjetas de producto, menú de navegación).",
+      "Al contenedor padre agrégale: display: flex;",
+      "Prueba justify-content y align-items para acomodar los elementos.",
+      "Si necesitas que pasen a otra línea en pantallas pequeñas, agrega flex-wrap: wrap;"
+    ],
+    resource:"Flexbox Froggy — practica jugando",
+    mentor:{name:"Johan Ramirez", date:"03/09/2026", time:"6:30 pm", topic:"CSS: Flexbox"}
+  },
+  {
+    id:"js",
+    title:"JavaScript: funciones y tu mini-librería",
+    why:"Hasta ahora tu proyecto se veía bien pero no 'hacía' nada por sí solo. Las funciones son las que convierten tu página de una vitrina a una herramienta que calcula, valida y responde.",
+    question:"¿Ya escribiste al menos una función propia en tu calculos.js y la usas en tu proyecto?",
+    steps:[
+      "Abre tu archivo calculos.js y revisa qué función ya tienes (ej. calcular precio, descuento, ganancia).",
+      "Si no tienes ninguna, escribe una función simple: function calcularTotal(precio, cantidad) { return precio * cantidad; }",
+      "Conecta esa función a un botón o input de tu proyecto para que se use de verdad.",
+      "Prueba con console.log() que el resultado sea el esperado antes de conectarlo a la interfaz."
+    ],
+    resource:"javascript.info — Funciones",
+    mentor:{name:"Manuel Carpio", date:"21/09/2026", time:"6:00 pm", topic:"JavaScript: Funciones y mini-librería de cálculo"}
+  },
+  {
+    id:"deploy",
+    title:"Despliegue: tu proyecto está en línea",
+    why:"Un proyecto que solo funciona en tu computador no lo puede ver nadie más. Publicarlo es lo que lo convierte en algo real que puedes compartir con tu familia, amigos o clientes.",
+    question:"¿Tu proyecto ya tiene un link donde cualquiera lo pueda ver, sin instalar nada?",
+    steps:[
+      "Verifica que tu repositorio en GitHub esté actualizado con tu última versión.",
+      "Activa GitHub Pages en la configuración del repositorio (Settings → Pages).",
+      "Selecciona la rama main como fuente y espera unos minutos a que se publique.",
+      "Prueba el link generado desde otro dispositivo o navegador para confirmar que funciona."
+    ],
+    resource:"GitHub Docs — GitHub Pages",
+    mentor:null,
+    supportLink:{label:"GitHub Docs — GitHub Pages", note:"Sigue la guía oficial paso a paso; si tu repo ya está actualizado, publicar toma menos de 5 minutos."},
+    avanzadoOnly:true
+  }
+];
+
+let track = "basico";
+let state = {}; // { id: 'pending' | 'showingSteps' | 'showingMentor' | 'done' }
+let whyOpen = {}; // { id: bool }
+CHECKPOINTS.forEach(c => { state[c.id] = 'pending'; whyOpen[c.id] = false; });
+
+function visibleCheckpoints(){
+  // avanzadoOnly now applies only to Deploy — JS is shared by both rutas since ambas tienen mentoría de refuerzo
+  return CHECKPOINTS.filter(c => track === "avanzado" || !c.avanzadoOnly);
+}
+
+function render(){
+  const list = visibleCheckpoints();
+  const path = document.getElementById('path');
+  path.innerHTML = '';
+
+  let firstNotDone = list.findIndex(c => state[c.id] !== 'done');
+  if(firstNotDone === -1) firstNotDone = list.length;
+
+  list.forEach((c, i) => {
+    const status = state[c.id];
+    const isDone = status === 'done';
+    const isCurrent = i === firstNotDone;
+    const isLocked = i > firstNotDone;
+
+    const row = document.createElement('div');
+    row.className = 'node-row ' + (isDone ? 'done' : isCurrent ? 'current' : 'locked');
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    const dot = document.createElement('div');
+    dot.className = 'dot mono';
+    dot.textContent = isDone ? '✓' : (i+1);
+    rail.appendChild(dot);
+    if(i < list.length - 1){
+      const conn = document.createElement('div');
+      conn.className = 'connector';
+      rail.appendChild(conn);
+    }
+    row.appendChild(rail);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'card-wrap';
+    const card = document.createElement('div');
+    card.className = 'topic-card';
+
+    const top = document.createElement('div');
+    top.className = 'card-top';
+    const h = document.createElement('h3');
+    h.className = 'card-title';
+    h.textContent = c.title;
+    const statusLabel = document.createElement('span');
+    statusLabel.className = 'card-status mono';
+    statusLabel.textContent = isDone ? 'completado' : isCurrent ? 'checkpoint actual' : 'bloqueado';
+    top.appendChild(h); top.appendChild(statusLabel);
+    card.appendChild(top);
+
+    if(c.why){
+      const whyBtn = document.createElement('button');
+      whyBtn.className = 'why-btn mono';
+      whyBtn.textContent = whyOpen[c.id] ? '– ocultar por qué importa' : '¿Por qué esto importa?';
+      whyBtn.onclick = (e) => { e.stopPropagation(); whyOpen[c.id] = !whyOpen[c.id]; render(); };
+      card.appendChild(whyBtn);
+      if(whyOpen[c.id]){
+        const whyP = document.createElement('p');
+        whyP.className = 'why-text';
+        whyP.textContent = c.why;
+        card.appendChild(whyP);
+      }
+    }
+
+    const detail = document.createElement('div');
+    detail.className = 'detail' + (isCurrent && status !== 'pending' ? ' open' : '');
+    detail.appendChild(buildDetail(c, status, isCurrent));
+    card.appendChild(detail);
+
+    if(isCurrent){
+      card.onclick = (e) => {
+        if(e.target.closest('.btn')) return;
+        detail.classList.toggle('open');
+      };
+    }
+
+    wrap.appendChild(card);
+    row.appendChild(wrap);
+    path.appendChild(row);
+  });
+
+  const doneCount = list.filter(c => state[c.id] === 'done').length;
+  document.getElementById('progressLabel').textContent = `${doneCount} / ${list.length} checkpoints`;
+  document.getElementById('progressFill').style.width = (doneCount/list.length*100) + '%';
+  document.getElementById('doneBanner').classList.toggle('show', doneCount === list.length);
+}
+
+function buildDetail(c, status, isCurrent){
+  const container = document.createElement('div');
+  if(!isCurrent && status !== 'done'){
+    const p = document.createElement('p');
+    p.className='q';
+    p.textContent = 'Completa el checkpoint anterior primero.';
+    container.appendChild(p);
+    return container;
+  }
+  if(status === 'done'){
+    const p = document.createElement('p');
+    p.className='q';
+    p.style.color = 'var(--green)';
+    p.textContent = '✓ Marcado como completado.';
+    container.appendChild(p);
+    const btn = document.createElement('button');
+    btn.className='btn';
+    btn.textContent='Deshacer';
+    btn.onclick=()=>{ state[c.id]='pending'; render(); };
+    container.appendChild(btn);
+    return container;
+  }
+
+  if(status === 'pending'){
+    const q = document.createElement('p');
+    q.className='q';
+    q.textContent = c.question;
+    container.appendChild(q);
+    const row = document.createElement('div');
+    row.className='btn-row';
+    const yes = document.createElement('button');
+    yes.className='btn primary'; yes.textContent='Sí, ya lo hice';
+    yes.onclick=()=>{ state[c.id]='done'; render(); };
+    const no = document.createElement('button');
+    no.className='btn'; no.textContent='Todavía no';
+    no.onclick=()=>{ state[c.id]='showingSteps'; render(); };
+    row.appendChild(yes); row.appendChild(no);
+    container.appendChild(row);
+    return container;
+  }
+
+  if(status === 'showingSteps'){
+    const box = document.createElement('div');
+    box.className='steps-box';
+    const ol = document.createElement('ol');
+    c.steps.forEach(s=>{ const li=document.createElement('li'); li.textContent=s; ol.appendChild(li); });
+    box.appendChild(ol);
+    const tag = document.createElement('div');
+    tag.className='resource-tag mono';
+    tag.textContent = '↳ recurso: ' + c.resource;
+    box.appendChild(tag);
+    container.appendChild(box);
+
+    const q = document.createElement('p');
+    q.className='q';
+    q.textContent = '¿Ya entendiste cómo hacerlo?';
+    container.appendChild(q);
+
+    const row = document.createElement('div');
+    row.className='btn-row';
+    const yes = document.createElement('button');
+    yes.className='btn primary'; yes.textContent='Sí, ya entendí';
+    yes.onclick=()=>{ state[c.id]='done'; render(); };
+    const no = document.createElement('button');
+    no.className='btn'; no.textContent='No, sigo confundido';
+    no.onclick=()=>{ state[c.id]='showingMentor'; render(); };
+    row.appendChild(yes); row.appendChild(no);
+    container.appendChild(row);
+    return container;
+  }
+
+  if(status === 'showingMentor'){
+    const box = document.createElement('div');
+    box.className='mentor-box';
+    if(c.mentor){
+      const p1 = document.createElement('p');
+      p1.textContent = 'Tranquilo/a, para esto ya hay una mentoría de refuerzo programada:';
+      const p2 = document.createElement('p');
+      p2.className='session';
+      p2.textContent = `${c.mentor.date} · ${c.mentor.time} · ${c.mentor.name}`;
+      const p3 = document.createElement('p');
+      p3.textContent = c.mentor.topic;
+      box.appendChild(p1); box.appendChild(p2); box.appendChild(p3);
+    } else if(c.supportLink){
+      const p1 = document.createElement('p');
+      p1.textContent = 'Aún no hay mentoría de refuerzo para este tema, pero repásalo aquí:';
+      const p2 = document.createElement('p');
+      p2.className='session';
+      p2.textContent = c.supportLink.label;
+      const p3 = document.createElement('p');
+      p3.textContent = c.supportLink.note;
+      box.appendChild(p1); box.appendChild(p2); box.appendChild(p3);
+    } else {
+      const p1 = document.createElement('p');
+      p1.textContent = 'Tranquilo/a, comenta esta duda con tu mentor en la próxima sesión semanal para revisarla juntos.';
+      box.appendChild(p1);
+    }
+    container.appendChild(box);
+
+    const row = document.createElement('div');
+    row.className='btn-row';
+    const back = document.createElement('button');
+    back.className='btn'; back.textContent='Volver a intentar solo';
+    back.onclick=()=>{ state[c.id]='showingSteps'; render(); };
+    const done = document.createElement('button');
+    done.className='btn primary'; done.textContent='Ya lo resolví, marcar completo';
+    done.onclick=()=>{ state[c.id]='done'; render(); };
+    row.appendChild(back); row.appendChild(done);
+    container.appendChild(row);
+    return container;
+  }
+}
+
+document.getElementById('trackToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  document.querySelectorAll('#trackToggle button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  track = btn.dataset.track;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
