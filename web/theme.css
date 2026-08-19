@@ -1,0 +1,31 @@
+/* Design tokens and base styles shared by index.html and admin.html.
+   Keeping them in one file means the two pages cannot drift apart. */
+
+:root{
+  /* Sofka brand book v1 2026 */
+  --obsidian:#121212;
+  --orange:#EA7307;
+  --orange-dim:#c05f04;
+  --light:#EFEAE4;      /* sofka-light */
+  --dark-neutral:#A19381;
+  --green:#33A958;       /* sofka-positive */
+  --warning:#AD931A;     /* sofka-warning */
+  --info:#004BD8;
+  --card:#FFFFFF;
+  --ink:#181511;
+  --ink-soft:#736A5F;
+  --line:#E1DAD0;
+  --warn-bg:#FBF4DE;
+  --warn-line:#E9D89A;
+  --warn-ink:#7A5F0E;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0; touch-action:manipulation;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--light);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+.display{font-family:'Clash Display',sans-serif;}

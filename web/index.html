@@ -7,35 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600&f[]=clash-grotesk@400,500&display=swap">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root{
-    /* Sofka brand book v1 2026 */
-    --obsidian:#121212;
-    --orange:#EA7307;
-    --orange-dim:#c05f04;
-    --light:#EFEAE4;      /* sofka-light */
-    --dark-neutral:#A19381;
-    --green:#33A958;       /* sofka-positive */
-    --warning:#AD931A;     /* sofka-warning */
-    --info:#004BD8;
-    --card:#FFFFFF;
-    --ink:#181511;
-    --ink-soft:#736A5F;
-    --line:#E1DAD0;
-    --warn-bg:#FBF4DE;
-    --warn-line:#E9D89A;
-    --warn-ink:#7A5F0E;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0; touch-action:manipulation;}
-  body{
-    font-family:'Inter',sans-serif;
-    background:var(--light);
-    color:var(--ink);
-    -webkit-font-smoothing:antialiased;
-  }
-  .mono{font-family:'JetBrains Mono',monospace;}
-  .display{font-family:'Clash Display',sans-serif;}
+
 
   header{
     background:var(--obsidian);
@@ -312,9 +286,99 @@
     color:var(--ink-soft);
     font-family:'JetBrains Mono',monospace;
   }
+
+  /* --- auth gate --- */
+  body.booting main, body.booting header, body.booting footer{ visibility:hidden; }
+  body.anon main, body.anon footer{ display:none; }
+
+  #authGate{
+    position:fixed; inset:0; z-index:50;
+    background:var(--obsidian);
+    display:none;
+    align-items:center; justify-content:center;
+    padding:24px;
+  }
+  body.anon #authGate{ display:flex; }
+  #authGate::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(circle at 85% -10%, rgba(234,115,7,0.18), transparent 45%);
+  }
+  .auth-card{
+    position:relative; z-index:1;
+    width:100%; max-width:420px;
+    background:var(--card);
+    border-radius:16px;
+    padding:32px 28px;
+  }
+  .auth-card .eyebrow{ color:var(--ink-soft); }
+  .auth-card h2{
+    font-family:'Clash Display',sans-serif;
+    font-size:22px; margin:0 0 8px; font-weight:600;
+  }
+  .auth-card p.lead{
+    margin:0 0 20px; font-size:14.5px; line-height:1.55; color:var(--ink-soft);
+  }
+  .auth-card label{
+    display:block; font-family:'JetBrains Mono',monospace;
+    font-size:12px; color:var(--ink-soft); margin-bottom:6px;
+  }
+  .auth-card input{
+    width:100%; font-family:'Inter',sans-serif; font-size:15px;
+    padding:12px 14px; min-height:46px;
+    border:1.5px solid var(--line); border-radius:9px;
+    background:#fff; color:var(--ink); margin-bottom:14px;
+  }
+  .auth-card input:focus{ outline:none; border-color:var(--orange); }
+  .auth-card .btn{ width:100%; justify-content:center; }
+  .auth-msg{
+    margin:14px 0 0; font-size:13.5px; line-height:1.5;
+    padding:11px 13px; border-radius:9px; display:none;
+  }
+  .auth-msg.show{ display:block; }
+  .auth-msg.ok{ background:#E7F5EC; color:#1E6B37; border:1px solid #C9EAD2; }
+  .auth-msg.err{ background:var(--warn-bg); color:var(--warn-ink); border:1px solid var(--warn-line); }
+
+  /* --- session bar --- */
+  .session-bar{
+    display:flex; align-items:center; gap:12px;
+    flex-wrap:wrap; margin-top:20px;
+    position:relative; z-index:1;
+  }
+  .session-bar .who{
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dark-neutral);
+  }
+  .session-bar .who strong{ color:#fff; font-weight:500; }
+  .link-btn{
+    background:none; border:none; padding:0; cursor:pointer;
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--orange); text-decoration:underline; text-underline-offset:2px;
+  }
+  .sync-tag{
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--ink-soft); min-height:14px;
+  }
+  .sync-tag.saving{ color:var(--warning); }
+  .sync-tag.error{ color:#B4402B; }
+  .sync-tag.saved{ color:var(--green); }
 </style>
 </head>
-<body>
+<body class="booting">
+
+<div id="authGate">
+  <div class="auth-card">
+    <p class="eyebrow mono">jóvenes crea<span style="color:var(--orange)">_</span>TIvos · 2026</p>
+    <h2 class="display">Entra a tu ruta</h2>
+    <p class="lead">Escribe tu correo y te enviamos un enlace para entrar. No necesitas contraseña.</p>
+    <form id="authForm" novalidate>
+      <label for="authEmail">tu correo</label>
+      <input id="authEmail" type="email" inputmode="email" autocomplete="email"
+             placeholder="nombre@correo.com" required>
+      <button type="submit" class="btn primary" id="authSubmit">Enviarme el enlace</button>
+    </form>
+    <p class="auth-msg" id="authMsg"></p>
+  </div>
+</div>
+
 
 <header>
   <p class="eyebrow">jóvenes crea<span style="color:var(--orange)">_</span>TIvos · 2026</p>
@@ -324,12 +388,17 @@
     <button data-track="basico" class="active">Básico</button>
     <button data-track="avanzado">Avanzado</button>
   </div>
+  <div class="session-bar" id="sessionBar" hidden>
+    <span class="who mono">sesión: <strong id="sessionEmail"></strong></span>
+    <button type="button" class="link-btn" id="logoutBtn">salir</button>
+  </div>
 </header>
 
 <main>
   <div class="progress-row">
     <span class="label mono" id="progressLabel">0 / 5 checkpoints</span>
     <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <span class="sync-tag mono" id="syncTag"></span>
   </div>
 
   <div class="path" id="path"></div>
@@ -340,120 +409,148 @@
   </div>
 </main>
 
-<footer>local_state · no se guarda al cerrar la pestaña · vuelve a marcar tus avances cada semana</footer>
+<footer>tu avance se guarda en tu cuenta · puedes cerrar la pestaña y volver cuando quieras</footer>
 
-<script>
-const CHECKPOINTS = [
-  {
-    id:"git",
-    title:"GitHub: tu proyecto está subido",
-    why:"Sin repositorio, tu progreso no queda guardado en ningún lado y no puedes mostrar tu avance real. Es la base para todo lo que sigue.",
-    question:"¿Ya subiste tu proyecto a GitHub?",
-    steps:[
-      "Instala Git en tu computador (si usas un equipo del salón, pregunta si ya está instalado).",
-      "Crea una cuenta en GitHub.com si aún no tienes una.",
-      "Crea un repositorio nuevo con el nombre de tu proyecto.",
-      "En tu carpeta de proyecto, corre: git init",
-      "Corre: git add . y luego git commit -m \"primer commit\"",
-      "Conecta tu repo con: git remote add origin [link-de-tu-repo]",
-      "Sube tus archivos con: git push -u origin main"
-    ],
-    resource:"Learn Git Branching — practica los comandos sin miedo a romper nada",
-    mentor:{name:"Kevin Galarza", date:"20/08/2026", time:"6:30 pm", topic:"Git y GitHub (instalación, comandos básicos, subir proyecto)"}
-  },
-  {
-    id:"html",
-    title:"HTML: estructura semántica lista",
-    why:"Una estructura clara es lo que le permite a cualquiera (incluido tú en un mes) entender de qué trata cada parte de tu proyecto con solo mirar el código.",
-    question:"¿Tu proyecto ya tiene una estructura HTML semántica (header, main, section, footer)?",
-    steps:[
-      "Revisa que tu página use etiquetas con significado: <header>, <nav>, <main>, <section>, <footer> — no solo <div> para todo.",
-      "Cada sección de tu idea de negocio debe tener su propia etiqueta <section>.",
-      "Usa <h1> una sola vez por página, y <h2>/<h3> para los subtítulos en orden.",
-      "Verifica que las imágenes tengan atributo alt describiendo qué muestran."
-    ],
-    resource:"MDN — Elementos semánticos de HTML5",
-    mentor:null,
-    supportLink:{label:"MDN — Elementos semánticos de HTML5", note:"Repasa ahí los ejemplos de header/main/section/footer y compáralos con tu propio código."}
-  },
-  {
-    id:"box",
-    title:"CSS: box model aplicado",
-    why:"El box model es la razón por la que las cosas se ven 'pegadas' o descuadradas. Entenderlo bien te ahorra horas de andar moviendo píxeles a ciegas.",
-    question:"¿Ya aplicaste padding, margin y border de forma consciente en tu proyecto?",
-    steps:[
-      "Identifica 3 elementos de tu página que se vean 'pegados' o descuadrados.",
-      "Agrega box-sizing: border-box; a tu hoja de estilos (idealmente a todo con *).",
-      "Ajusta el padding interno de tarjetas o botones para que el contenido respire.",
-      "Usa margin para separar bloques entre sí, no para separar contenido interno."
-    ],
-    resource:"CSS Tricks — The Box Model",
-    mentor:{name:"Johan Ramirez", date:"20/08/2026", time:"6:30 pm", topic:"CSS: Box model / padding / margin / border"}
-  },
-  {
-    id:"responsive",
-    title:"CSS: diseño responsivo (media queries)",
-    why:"La mayoría de tus usuarios reales van a abrir tu proyecto desde el celular. Si no es responsivo, pierdes a la mayoría de tu público desde el primer segundo.",
-    question:"¿Tu proyecto se ve bien tanto en celular como en computador?",
-    steps:[
-      "Abre tu proyecto y reduce la ventana del navegador (o revísalo desde tu celular).",
-      "Identifica qué se rompe: texto muy grande, imágenes que se salen, columnas apretadas.",
-      "Agrega un media query, por ejemplo: @media (max-width: 600px) { ... }",
-      "Dentro de ese bloque, ajusta tamaños de fuente, anchos y organización en columna."
-    ],
-    resource:"freeCodeCamp Español — Diseño responsivo",
-    mentor:{name:"Johan Ramirez", date:"27/08/2026", time:"6:30 pm", topic:"CSS: Media Queries / diseño responsivo"}
-  },
-  {
-    id:"flexbox",
-    title:"CSS: Flexbox para tu layout",
-    why:"Flexbox es lo que usa la mayoría de sitios reales para organizar menús, tarjetas y formularios sin trucos raros. Dominarlo te ahorra mucho CSS innecesario.",
-    question:"¿Usaste Flexbox para organizar alguna sección de tu proyecto (menú, tarjetas, formulario)?",
-    steps:[
-      "Elige una sección con varios elementos en fila o columna (ej. tarjetas de producto, menú de navegación).",
-      "Al contenedor padre agrégale: display: flex;",
-      "Prueba justify-content y align-items para acomodar los elementos.",
-      "Si necesitas que pasen a otra línea en pantallas pequeñas, agrega flex-wrap: wrap;"
-    ],
-    resource:"Flexbox Froggy — practica jugando",
-    mentor:{name:"Johan Ramirez", date:"03/09/2026", time:"6:30 pm", topic:"CSS: Flexbox"}
-  },
-  {
-    id:"js",
-    title:"JavaScript: funciones y tu mini-librería",
-    why:"Hasta ahora tu proyecto se veía bien pero no 'hacía' nada por sí solo. Las funciones son las que convierten tu página de una vitrina a una herramienta que calcula, valida y responde.",
-    question:"¿Ya escribiste al menos una función propia en tu calculos.js y la usas en tu proyecto?",
-    steps:[
-      "Abre tu archivo calculos.js y revisa qué función ya tienes (ej. calcular precio, descuento, ganancia).",
-      "Si no tienes ninguna, escribe una función simple: function calcularTotal(precio, cantidad) { return precio * cantidad; }",
-      "Conecta esa función a un botón o input de tu proyecto para que se use de verdad.",
-      "Prueba con console.log() que el resultado sea el esperado antes de conectarlo a la interfaz."
-    ],
-    resource:"javascript.info — Funciones",
-    mentor:{name:"Manuel Carpio", date:"21/09/2026", time:"6:00 pm", topic:"JavaScript: Funciones y mini-librería de cálculo"}
-  },
-  {
-    id:"deploy",
-    title:"Despliegue: tu proyecto está en línea",
-    why:"Un proyecto que solo funciona en tu computador no lo puede ver nadie más. Publicarlo es lo que lo convierte en algo real que puedes compartir con tu familia, amigos o clientes.",
-    question:"¿Tu proyecto ya tiene un link donde cualquiera lo pueda ver, sin instalar nada?",
-    steps:[
-      "Verifica que tu repositorio en GitHub esté actualizado con tu última versión.",
-      "Activa GitHub Pages en la configuración del repositorio (Settings → Pages).",
-      "Selecciona la rama main como fuente y espera unos minutos a que se publique.",
-      "Prueba el link generado desde otro dispositivo o navegador para confirmar que funciona."
-    ],
-    resource:"GitHub Docs — GitHub Pages",
-    mentor:null,
-    supportLink:{label:"GitHub Docs — GitHub Pages", note:"Sigue la guía oficial paso a paso; si tu repo ya está actualizado, publicar toma menos de 5 minutos."},
-    avanzadoOnly:true
-  }
-];
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/+esm';
+import { CHECKPOINTS } from './checkpoints.js';
+
 
 let track = "basico";
 let state = {}; // { id: 'pending' | 'showingSteps' | 'showingMentor' | 'done' }
 let whyOpen = {}; // { id: bool }
 CHECKPOINTS.forEach(c => { state[c.id] = 'pending'; whyOpen[c.id] = false; });
+
+// --------------------------------------------------------------------------
+// Supabase
+// --------------------------------------------------------------------------
+
+const cfg = window.SUPABASE_CONFIG || {};
+const configured = Boolean(cfg.url) && !cfg.url.includes('YOUR-PROJECT-REF');
+const sb = configured ? createClient(cfg.url, cfg.anonKey) : null;
+
+let session = null;
+const pendingWrites = new Map(); // checkpoint_id -> status, awaiting a successful write
+
+const el = (id) => document.getElementById(id);
+
+// --------------------------------------------------------------------------
+// Local backup
+//
+// Progress is written to localStorage before every network call, so a dropped
+// connection never costs a student their work. On the next successful login the
+// backup is replayed and merged into Supabase.
+// --------------------------------------------------------------------------
+
+const backupKey = () => `ruta:progress:${session ? session.user.id : 'anon'}`;
+
+function saveBackup(){
+  try{ localStorage.setItem(backupKey(), JSON.stringify(state)); }
+  catch(_){ /* private mode or quota: the network path is still authoritative */ }
+}
+
+function readBackup(){
+  try{ return JSON.parse(localStorage.getItem(backupKey()) || '{}'); }
+  catch(_){ return {}; }
+}
+
+// --------------------------------------------------------------------------
+// Sync indicator
+// --------------------------------------------------------------------------
+
+let syncTimer = null;
+function sync(text, kind){
+  const tag = el('syncTag');
+  if(!tag) return;
+  tag.textContent = text;
+  tag.className = 'sync-tag mono' + (kind ? ' ' + kind : '');
+  clearTimeout(syncTimer);
+  if(kind === 'saved') syncTimer = setTimeout(() => { tag.textContent = ''; tag.className = 'sync-tag mono'; }, 2000);
+}
+
+// --------------------------------------------------------------------------
+// Progress persistence
+// --------------------------------------------------------------------------
+
+function setStatus(id, status){
+  state[id] = status;
+  render();
+  saveBackup();
+  persist(id, status);
+}
+
+async function persist(id, status){
+  if(!sb || !session) return;
+  sync('guardando…', 'saving');
+  const { error } = await sb.from('progress').upsert({
+    user_id: session.user.id,
+    checkpoint_id: id,
+    status,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,checkpoint_id' });
+
+  if(error){
+    pendingWrites.set(id, status);
+    sync('sin conexión — guardado en este equipo', 'error');
+  }else{
+    pendingWrites.delete(id);
+    sync(pendingWrites.size ? 'sin conexión — guardado en este equipo' : 'guardado',
+         pendingWrites.size ? 'error' : 'saved');
+  }
+}
+
+async function flushPending(){
+  if(!pendingWrites.size) return;
+  for(const [id, status] of [...pendingWrites]) await persist(id, status);
+}
+
+window.addEventListener('online', flushPending);
+setInterval(flushPending, 15000);
+
+async function loadProgress(){
+  const backup = readBackup();
+  Object.keys(backup).forEach(id => { if(id in state) state[id] = backup[id]; });
+
+  const { data, error } = await sb
+    .from('progress')
+    .select('checkpoint_id, status')
+    .eq('user_id', session.user.id);
+
+  if(error){ sync('no se pudo leer tu avance', 'error'); return; }
+
+  // Server wins on load: it is the shared source of truth across devices.
+  const seen = new Set();
+  data.forEach(row => {
+    if(row.checkpoint_id in state){ state[row.checkpoint_id] = row.status; seen.add(row.checkpoint_id); }
+  });
+
+  // Anything the backup knows and the server does not is an unflushed write.
+  Object.keys(backup).forEach(id => {
+    if(id in state && !seen.has(id) && backup[id] !== 'pending') pendingWrites.set(id, backup[id]);
+  });
+  flushPending();
+}
+
+async function loadProfile(){
+  const { data, error } = await sb
+    .from('profiles')
+    .select('track, role, full_name')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if(error || !data) return;
+  if(data.track) track = data.track;
+  document.querySelectorAll('#trackToggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.track === track);
+  });
+}
+
+async function persistTrack(){
+  if(!sb || !session) return;
+  const { error } = await sb.from('profiles').update({ track }).eq('id', session.user.id);
+  if(error) sync('no se pudo guardar tu ruta', 'error');
+}
 
 function visibleCheckpoints(){
   // avanzadoOnly now applies only to Deploy — JS is shared by both rutas since ambas tienen mentoría de refuerzo
@@ -561,7 +658,7 @@ function buildDetail(c, status, isCurrent){
     const btn = document.createElement('button');
     btn.className='btn';
     btn.textContent='Deshacer';
-    btn.onclick=()=>{ state[c.id]='pending'; render(); };
+    btn.onclick=()=>{ setStatus(c.id,'pending'); };
     container.appendChild(btn);
     return container;
   }
@@ -575,10 +672,10 @@ function buildDetail(c, status, isCurrent){
     row.className='btn-row';
     const yes = document.createElement('button');
     yes.className='btn primary'; yes.textContent='Sí, ya lo hice';
-    yes.onclick=()=>{ state[c.id]='done'; render(); };
+    yes.onclick=()=>{ setStatus(c.id,'done'); };
     const no = document.createElement('button');
     no.className='btn'; no.textContent='Todavía no';
-    no.onclick=()=>{ state[c.id]='showingSteps'; render(); };
+    no.onclick=()=>{ setStatus(c.id,'showingSteps'); };
     row.appendChild(yes); row.appendChild(no);
     container.appendChild(row);
     return container;
@@ -605,10 +702,10 @@ function buildDetail(c, status, isCurrent){
     row.className='btn-row';
     const yes = document.createElement('button');
     yes.className='btn primary'; yes.textContent='Sí, ya entendí';
-    yes.onclick=()=>{ state[c.id]='done'; render(); };
+    yes.onclick=()=>{ setStatus(c.id,'done'); };
     const no = document.createElement('button');
     no.className='btn'; no.textContent='No, sigo confundido';
-    no.onclick=()=>{ state[c.id]='showingMentor'; render(); };
+    no.onclick=()=>{ setStatus(c.id,'showingMentor'); };
     row.appendChild(yes); row.appendChild(no);
     container.appendChild(row);
     return container;
@@ -646,10 +743,10 @@ function buildDetail(c, status, isCurrent){
     row.className='btn-row';
     const back = document.createElement('button');
     back.className='btn'; back.textContent='Volver a intentar solo';
-    back.onclick=()=>{ state[c.id]='showingSteps'; render(); };
+    back.onclick=()=>{ setStatus(c.id,'showingSteps'); };
     const done = document.createElement('button');
     done.className='btn primary'; done.textContent='Ya lo resolví, marcar completo';
-    done.onclick=()=>{ state[c.id]='done'; render(); };
+    done.onclick=()=>{ setStatus(c.id,'done'); };
     row.appendChild(back); row.appendChild(done);
     container.appendChild(row);
     return container;
@@ -663,9 +760,92 @@ document.getElementById('trackToggle').addEventListener('click', (e)=>{
   btn.classList.add('active');
   track = btn.dataset.track;
   render();
+  persistTrack();
 });
 
+// --------------------------------------------------------------------------
+// Auth
+// --------------------------------------------------------------------------
+
+function authMessage(text, kind){
+  const box = el('authMsg');
+  box.textContent = text;
+  box.className = 'auth-msg show ' + kind;
+}
+
+el('authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(!sb){ authMessage('Falta configurar Supabase en config.js.', 'err'); return; }
+
+  const email = el('authEmail').value.trim();
+  if(!email){ authMessage('Escribe tu correo para continuar.', 'err'); return; }
+
+  const submit = el('authSubmit');
+  submit.disabled = true;
+  submit.textContent = 'Enviando…';
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+
+  submit.disabled = false;
+  submit.textContent = 'Enviarme el enlace';
+
+  if(error){
+    authMessage('No pudimos enviar el enlace: ' + error.message, 'err');
+  }else{
+    authMessage('Listo. Te enviamos un enlace a ' + email + '. Ábrelo desde este mismo dispositivo. Si no lo ves, revisa tu carpeta de spam.', 'ok');
+  }
+});
+
+el('logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+});
+
+// --------------------------------------------------------------------------
+// Boot
+// --------------------------------------------------------------------------
+
+let loadedFor = null;
+
+async function applySession(next){
+  session = next;
+
+  if(!session){
+    loadedFor = null;
+    document.body.className = 'anon';
+    el('sessionBar').hidden = true;
+    return;
+  }
+
+  document.body.className = 'authed';
+  el('sessionEmail').textContent = session.user.email;
+  el('sessionBar').hidden = false;
+
+  // onAuthStateChange also fires for token refreshes; only reload on a real change.
+  if(loadedFor === session.user.id){ render(); return; }
+  loadedFor = session.user.id;
+
+  CHECKPOINTS.forEach(c => { state[c.id] = 'pending'; });
+  await loadProfile();
+  await loadProgress();
+  render();
+}
+
+async function boot(){
+  if(!sb){
+    document.body.className = 'anon';
+    authMessage('Falta configurar Supabase: edita web/config.js con la URL y la anon key de tu proyecto.', 'err');
+    return;
+  }
+  const { data } = await sb.auth.getSession();
+  await applySession(data.session);
+  sb.auth.onAuthStateChange((_event, next) => { applySession(next); });
+}
+
 render();
+boot();
 </script>
 </body>
 </html>
