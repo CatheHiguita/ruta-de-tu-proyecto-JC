@@ -52,6 +52,14 @@
          padding:3px 9px; border-radius:99px; border:1px solid var(--line); color:var(--ink-soft); }
   .chip.avanzado{ border-color:var(--orange); color:var(--orange-dim); }
 
+  .filters{ display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; padding:16px 18px; border-bottom:1px solid var(--line); }
+  .filters .field{ display:flex; flex-direction:column; gap:6px; }
+  .filters label{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft); }
+  .filters input, .filters select{ font-family:'Inter',sans-serif; font-size:14px; padding:9px 11px; min-height:40px;
+    border:1.5px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); }
+  .filters input{ min-width:230px; }
+  .filters input:focus, .filters select:focus{ outline:none; border-color:var(--orange); }
+  .filters .count{ margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft); }
   .bar{ display:flex; align-items:center; gap:10px; min-width:150px; }
   .bar-track{ flex:1; height:6px; background:var(--line); border-radius:99px; overflow:hidden; min-width:70px; }
   /* display:block is load-bearing: the fill is a span, and width/height do not
@@ -226,6 +234,10 @@ el('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut();
 // render empty even if someone skipped the check below.
 // --------------------------------------------------------------------------
 
+// What the table renders from, kept out of loadDashboard so the filters can
+// repaint without refetching.
+const view = { students: [], stuckBy: new Map() };
+
 async function loadDashboard(){
   const main = el('main');
 
@@ -295,39 +307,109 @@ async function loadDashboard(){
         </div>`).join('')}
     </div>`;
 
-  const sorted = [...students].sort((a, b) =>
+  // Least progress first: whoever needs the most support is read first.
+  view.students = [...students].sort((a, b) =>
     (a.completed / totalFor(a.track)) - (b.completed / totalFor(b.track)));
+  view.stuckBy = stuckBy;
 
   const table = `
     <h2 class="section">Avance por persona</h2>
     <p class="section-note">Ordenado de menor a mayor avance, para que quien más necesita acompañamiento quede primero.</p>
-    <div class="panel"><div class="table-scroll">
-      ${totalStudents === 0
-        ? '<p class="empty">Todavía no hay estudiantes registrados.</p>'
-        : `<table>
-        <thead><tr>
-          <th>estudiante</th><th>ruta</th><th>avance</th><th>trabado en</th><th>última actividad</th>
-        </tr></thead>
-        <tbody>
-        ${sorted.map(s => {
-          const total = totalFor(s.track);
-          const pct   = Math.round((s.completed / total) * 100);
-          const stuck = stuckBy.get(s.user_id);
-          return `<tr>
-            <td class="who-cell"><strong>${esc(s.full_name) || '—'}</strong><span>${esc(s.email)}</span></td>
-            <td><span class="chip ${esc(s.track)}">${esc(s.track)}</span></td>
-            <td><div class="bar">
-              <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
-              <span class="bar-num">${s.completed}/${total}</span>
-            </div></td>
-            <td class="stuck-cell ${stuck ? '' : 'none'}">${stuck ? esc(titleOf(stuck)) : '—'}</td>
-            <td class="muted">${relativeDate(s.last_activity)}</td>
-          </tr>`;
-        }).join('')}
-        </tbody></table>`}
-    </div></div>`;
+    <div class="panel">
+      <div class="filters">
+        <div class="field">
+          <label for="filterText">buscar</label>
+          <input id="filterText" type="search" autocomplete="off" placeholder="nombre o correo">
+        </div>
+        <div class="field">
+          <label for="filterCut">avance</label>
+          <select id="filterCut">${cutoffOptions()}</select>
+        </div>
+        <span class="count" id="filterCount"></span>
+      </div>
+      <div class="table-scroll" id="studentTable"></div>
+    </div>`;
 
   main.innerHTML = kpis + radar + table;
+
+  // The controls are rendered once and only the table is repainted, so typing
+  // in the search box never costs the input its focus.
+  el('filterText').addEventListener('input', renderStudents);
+  el('filterCut').addEventListener('change', renderStudents);
+  renderStudents();
+}
+
+// Every cutoff the group can be split at, phrased the way a mentor reads it.
+function cutoffOptions(){
+  const max = CHECKPOINTS.length;
+  const behind = [];
+  const ahead  = [];
+  for(let n = 1; n < max; n++) behind.push(`<option value="lte:${n}">${n} o menos completados</option>`);
+  for(let n = 2; n <= max; n++) ahead.push(`<option value="gte:${n}">${n} o más completados</option>`);
+  return `<option value="">todo el grupo</option>
+    <optgroup label="van atrás">${behind.join('')}</optgroup>
+    <optgroup label="van bien">${ahead.join('')}</optgroup>`;
+}
+
+// Accent- and case-insensitive: "herrera" has to find "Herrera Flórez".
+const foldText = (value) => (value || '')
+  .toString()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase();
+
+function filterStudents(){
+  const term = foldText(el('filterText').value.trim());
+  const cut  = el('filterCut').value;
+
+  return view.students.filter(s => {
+    if(term && !foldText(s.full_name).includes(term) && !foldText(s.email).includes(term)) return false;
+    if(!cut) return true;
+
+    const [op, raw] = cut.split(':');
+    const n = Number(raw);
+    return op === 'lte' ? s.completed <= n : s.completed >= n;
+  });
+}
+
+function renderStudents(){
+  const shown = filterStudents();
+  const groupSize = view.students.length;
+
+  el('filterCount').textContent = groupSize === 0
+    ? ''
+    : `${shown.length} de ${groupSize} ${groupSize === 1 ? 'estudiante' : 'estudiantes'}`;
+
+  if(groupSize === 0){
+    el('studentTable').innerHTML = '<p class="empty">Todavía no hay estudiantes registrados.</p>';
+    return;
+  }
+  if(shown.length === 0){
+    el('studentTable').innerHTML = '<p class="empty">Ningún estudiante coincide con el filtro.</p>';
+    return;
+  }
+
+  el('studentTable').innerHTML = `<table>
+    <thead><tr>
+      <th>estudiante</th><th>ruta</th><th>avance</th><th>trabado en</th><th>última actividad</th>
+    </tr></thead>
+    <tbody>
+    ${shown.map(s => {
+      const total = totalFor(s.track);
+      const pct   = Math.round((s.completed / total) * 100);
+      const stuck = view.stuckBy.get(s.user_id);
+      return `<tr>
+        <td class="who-cell"><strong>${esc(s.full_name) || '—'}</strong><span>${esc(s.email)}</span></td>
+        <td><span class="chip ${esc(s.track)}">${esc(s.track)}</span></td>
+        <td><div class="bar">
+          <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
+          <span class="bar-num">${s.completed}/${total}</span>
+        </div></td>
+        <td class="stuck-cell ${stuck ? '' : 'none'}">${stuck ? esc(titleOf(stuck)) : '—'}</td>
+        <td class="muted">${relativeDate(s.last_activity)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
 }
 
 // --------------------------------------------------------------------------
