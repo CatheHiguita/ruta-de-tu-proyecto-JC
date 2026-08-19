@@ -57,10 +57,38 @@ y expondría los datos de todo el grupo.
 El ingreso es por magic link (enlace por correo, sin contraseña). En
 Supabase → Authentication → URL Configuration hay que definir:
 
-- **Site URL:** el dominio de producción en Vercel
-- **Redirect URLs:** el mismo dominio, incluyendo `/admin.html`
+- **Site URL:** `https://ruta-de-tu-proyecto-jc.vercel.app`
+- **Redirect URLs:** una entrada por cada origen desde el que se abre la app:
+  - `https://ruta-de-tu-proyecto-jc.vercel.app/**`
+  - `http://localhost:5173/**` (solo para desarrollo local)
 
-Si estas URLs no coinciden con el dominio real, el enlace del correo no funciona.
+Estos valores viven en el dashboard del proyecto hosted, no en el repositorio:
+`supabase/config.toml` los replica para el stack local (`supabase start`), pero
+no los aplica en producción.
+
+> **Síntoma típico:** el correo llega con un enlace que redirige a
+> `http://localhost:3000`. El frontend envía el origen correcto en
+> `emailRedirectTo`, pero si ese origen no está en las Redirect URLs, Supabase lo
+> descarta y usa el Site URL como destino. La corrección es agregar el dominio a
+> la lista, no cambiar el código.
+
+#### Los dos correos del flujo
+
+Supabase envía plantillas distintas según si la cuenta ya existe:
+
+| Momento | Plantilla | Archivo |
+|---|---|---|
+| Primer ingreso (la cuenta no existe) | Confirm signup | `supabase/templates/confirmation.html` |
+| Ingresos siguientes | Magic Link | `supabase/templates/magic_link.html` |
+
+No son dos pasos encadenados: el enlace del primer correo confirma la cuenta **y**
+abre la sesión de una vez. Si parece que hace falta pedir un segundo enlace, es
+porque el primero redirigió a un dominio equivocado y la sesión nunca aterrizó en
+la app.
+
+Las plantillas del proyecto hosted se editan en Authentication → Emails, pegando
+el contenido de cada archivo. Las de `supabase/templates/` son la fuente de
+verdad versionada y las que usa el stack local.
 
 El SMTP por defecto de Supabase tiene límites bajos de envío y sus correos suelen
 llegar a spam. Para uso real conviene configurar un SMTP propio con dominio
@@ -123,4 +151,5 @@ cd web && python3 -m http.server 5173
 ```
 
 Y visitar `http://localhost:5173`. Para que el magic link funcione en local,
-agregar `http://localhost:5173` a las Redirect URLs en Supabase.
+`http://localhost:5173/**` debe estar en las Redirect URLs del dashboard (ver
+[Autenticación](#3-autenticación)).
