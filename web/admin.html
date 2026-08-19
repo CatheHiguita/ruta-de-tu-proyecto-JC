@@ -25,6 +25,7 @@
   .session-bar .who strong{ color:#fff; font-weight:500; }
   .link-btn{ background:none; border:none; padding:0; cursor:pointer; font-family:'JetBrains Mono',monospace;
              font-size:12px; color:var(--orange); text-decoration:underline; text-underline-offset:2px; }
+  a.link-btn{ line-height:1; }
 
   main{ max-width:1080px; margin:0 auto; padding:36px 24px 80px; }
 
@@ -125,6 +126,7 @@
   <p class="sub">Cómo va el grupo, y —más importante— dónde se están trabando.</p>
   <div class="session-bar" id="sessionBar" hidden>
     <span class="who mono">sesión: <strong id="sessionEmail"></strong></span>
+    <a class="link-btn" href="./index.html?ruta=1">mi ruta</a>
     <button type="button" class="link-btn" id="logoutBtn">salir</button>
   </div>
 </header>

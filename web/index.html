@@ -583,11 +583,12 @@ async function loadProfile(){
     .eq('id', session.user.id)
     .maybeSingle();
 
-  if(error || !data) return;
+  if(error || !data) return null;
   if(data.track) track = data.track;
   document.querySelectorAll('#trackToggle button').forEach(b => {
     b.classList.toggle('active', b.dataset.track === track);
   });
+  return data.role;
 }
 
 async function persistTrack(){
@@ -972,7 +973,15 @@ async function applySession(next){
   loadedFor = session.user.id;
 
   CHECKPOINTS.forEach(c => { state[c.id] = 'pending'; });
-  await loadProfile();
+  const role = await loadProfile();
+
+  // Mentors land on their dashboard instead of a route they are not following.
+  // `?ruta=1` is the way back: without it the panel's own link would bounce.
+  if(role === 'admin' && !new URLSearchParams(window.location.search).has('ruta')){
+    window.location.replace('./admin.html');
+    return;
+  }
+
   await loadProgress();
   render();
 }

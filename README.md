@@ -125,6 +125,10 @@ where email = 'correo@sofka.com.co';
 Un estudiante no puede otorgarse este rol a sí mismo: el privilegio `UPDATE`
 sobre la columna `role` está revocado a nivel de base de datos.
 
+Una vez asignado, esa cuenta entra directo al panel: `index.html` redirige a
+`admin.html` al detectar el rol. Para ver la ruta como estudiante hay que abrir
+`index.html?ruta=1`, que es a donde apunta el enlace **mi ruta** del panel.
+
 ## Modelo de datos
 
 | Tabla | Contenido |
