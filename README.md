@@ -54,45 +54,53 @@ y expondría los datos de todo el grupo.
 
 ### 3. Autenticación
 
-El ingreso es por magic link (enlace por correo, sin contraseña). En
-Supabase → Authentication → URL Configuration hay que definir:
+El ingreso es con **correo y contraseña**. El registro no envía ningún correo:
+la persona crea su cuenta y entra en el mismo paso.
+
+En Supabase → Authentication → Providers → Email:
+
+- **Enable email provider:** activado
+- **Confirm email:** desactivado
+
+Si `Confirm email` queda activo, el registro no abre sesión y queda esperando un
+correo de confirmación. La app detecta ese caso y lo dice en pantalla, pero el
+ingreso queda bloqueado hasta apagar la opción.
+
+En Supabase → Authentication → URL Configuration:
 
 - **Site URL:** `https://ruta-de-tu-proyecto-jc.vercel.app`
 - **Redirect URLs:** una entrada por cada origen desde el que se abre la app:
   - `https://ruta-de-tu-proyecto-jc.vercel.app/**`
   - `http://localhost:5173/**` (solo para desarrollo local)
 
+Estas URLs ya no se usan para entrar, pero sí para el enlace de recuperación de
+contraseña. Si no coinciden con el dominio real, ese enlace redirige al Site URL
+por defecto de Supabase, que apunta a `localhost`.
+
 Estos valores viven en el dashboard del proyecto hosted, no en el repositorio:
 `supabase/config.toml` los replica para el stack local (`supabase start`), pero
 no los aplica en producción.
 
-> **Síntoma típico:** el correo llega con un enlace que redirige a
-> `http://localhost:3000`. El frontend envía el origen correcto en
-> `emailRedirectTo`, pero si ese origen no está en las Redirect URLs, Supabase lo
-> descarta y usa el Site URL como destino. La corrección es agregar el dominio a
-> la lista, no cambiar el código.
+#### Por qué contraseña y no magic link
 
-#### Los dos correos del flujo
+El SMTP integrado de Supabase permite **2 correos por hora** y no se puede subir
+sin configurar un SMTP propio (ver el comentario de `email_sent` en
+`supabase/config.toml`). Con una cohorte entera pidiendo enlaces, ese límite se
+agota en minutos y el ingreso se cae con `email rate limit exceeded`. Con
+contraseña, el ingreso no depende del correo.
 
-Supabase envía plantillas distintas según si la cuenta ya existe:
+> **Limitación conocida:** el enlace de "olvidé mi contraseña" **sí** usa ese
+> SMTP y hereda el mismo límite. Mientras no haya SMTP propio, quien olvide su
+> contraseña puede quedar bloqueado; un administrador puede resetearla desde
+> Authentication → Users en el dashboard. Configurar un SMTP propio en
+> Authentication → Emails elimina esta limitación.
 
-| Momento | Plantilla | Archivo |
-|---|---|---|
-| Primer ingreso (la cuenta no existe) | Confirm signup | `supabase/templates/confirmation.html` |
-| Ingresos siguientes | Magic Link | `supabase/templates/magic_link.html` |
+#### Correos
 
-No son dos pasos encadenados: el enlace del primer correo confirma la cuenta **y**
-abre la sesión de una vez. Si parece que hace falta pedir un segundo enlace, es
-porque el primero redirigió a un dominio equivocado y la sesión nunca aterrizó en
-la app.
-
-Las plantillas del proyecto hosted se editan en Authentication → Emails, pegando
-el contenido de cada archivo. Las de `supabase/templates/` son la fuente de
-verdad versionada y las que usa el stack local.
-
-El SMTP por defecto de Supabase tiene límites bajos de envío y sus correos suelen
-llegar a spam. Para uso real conviene configurar un SMTP propio con dominio
-verificado en Authentication → Emails.
+Solo queda una plantilla: `supabase/templates/recovery.html`, el enlace para
+cambiar la contraseña. Es la fuente de verdad versionada y la que usa el stack
+local; en el proyecto hosted hay que pegar su contenido en Authentication →
+Emails → Reset Password.
 
 ### 4. Despliegue
 
@@ -150,6 +158,6 @@ directamente desde el disco. Hay que servirlas por HTTP:
 cd web && python3 -m http.server 5173
 ```
 
-Y visitar `http://localhost:5173`. Para que el magic link funcione en local,
-`http://localhost:5173/**` debe estar en las Redirect URLs del dashboard (ver
-[Autenticación](#3-autenticación)).
+Y visitar `http://localhost:5173`. Para que el enlace de recuperación de
+contraseña funcione en local, `http://localhost:5173/**` debe estar en las
+Redirect URLs del dashboard (ver [Autenticación](#3-autenticación)).

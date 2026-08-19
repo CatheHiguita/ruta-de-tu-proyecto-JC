@@ -330,6 +330,23 @@
   }
   .auth-card input:focus{ outline:none; border-color:var(--orange); }
   .auth-card .btn{ width:100%; justify-content:center; }
+  .auth-tabs{
+    display:flex; gap:4px; margin:0 0 18px;
+    background:var(--light); border-radius:10px; padding:4px;
+  }
+  .auth-tab{
+    flex:1; border:0; background:transparent; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:14px; font-weight:600;
+    color:var(--ink-soft); padding:9px 0; border-radius:7px;
+  }
+  .auth-tab.active{ background:var(--card); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+  .auth-link{
+    display:block; width:100%; margin-top:10px; padding:4px;
+    border:0; background:transparent; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:13.5px;
+    color:var(--ink-soft); text-decoration:underline;
+  }
+  .auth-link:hover{ color:var(--orange); }
   .auth-msg{
     margin:14px 0 0; font-size:13.5px; line-height:1.5;
     padding:11px 13px; border-radius:9px; display:none;
@@ -367,14 +384,41 @@
 <div id="authGate">
   <div class="auth-card">
     <p class="eyebrow mono">jóvenes crea<span style="color:var(--orange)">_</span>TIvos · 2026</p>
-    <h2 class="display">Entra a tu ruta</h2>
-    <p class="lead">Escribe tu correo y te enviamos un enlace para entrar. No necesitas contraseña.</p>
-    <form id="authForm" novalidate>
-      <label for="authEmail">tu correo</label>
-      <input id="authEmail" type="email" inputmode="email" autocomplete="email"
-             placeholder="nombre@correo.com" required>
-      <button type="submit" class="btn primary" id="authSubmit">Enviarme el enlace</button>
-    </form>
+
+    <div id="authMain">
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-mode="signin">Entrar</button>
+        <button type="button" class="auth-tab" data-mode="signup">Crear cuenta</button>
+      </div>
+      <h2 class="display" id="authTitle">Entra a tu ruta</h2>
+      <p class="lead" id="authLead">Escribe tu correo y tu contraseña. Tu avance te sigue en cualquier dispositivo.</p>
+      <form id="authForm" novalidate>
+        <div id="nameField" hidden>
+          <label for="authName">tu nombre</label>
+          <input id="authName" type="text" autocomplete="name" placeholder="Nombre y apellido">
+        </div>
+        <label for="authEmail">tu correo</label>
+        <input id="authEmail" type="email" inputmode="email" autocomplete="email"
+               placeholder="nombre@correo.com" required>
+        <label for="authPassword">tu contraseña</label>
+        <input id="authPassword" type="password" autocomplete="current-password"
+               placeholder="mínimo 8 caracteres" required>
+        <button type="submit" class="btn primary" id="authSubmit">Entrar</button>
+      </form>
+      <button type="button" class="auth-link" id="forgotBtn">Olvidé mi contraseña</button>
+    </div>
+
+    <div id="recoveryPanel" hidden>
+      <h2 class="display">Define tu nueva contraseña</h2>
+      <p class="lead">Escribe una contraseña nueva y entra con ella de ahora en adelante.</p>
+      <form id="recoveryForm" novalidate>
+        <label for="newPassword">nueva contraseña</label>
+        <input id="newPassword" type="password" autocomplete="new-password"
+               placeholder="mínimo 8 caracteres" required>
+        <button type="submit" class="btn primary" id="recoverySubmit">Guardar y entrar</button>
+      </form>
+    </div>
+
     <p class="auth-msg" id="authMsg"></p>
   </div>
 </div>
@@ -767,36 +811,132 @@ document.getElementById('trackToggle').addEventListener('click', (e)=>{
 // Auth
 // --------------------------------------------------------------------------
 
+const MIN_PASSWORD = 8;
+let authMode = 'signin';
+let recoveryMode = false;
+
 function authMessage(text, kind){
   const box = el('authMsg');
   box.textContent = text;
   box.className = 'auth-msg show ' + kind;
 }
 
+// Supabase reports errors in English. Students should never read those raw.
+function authError(error){
+  const m = (error && error.message || '').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'Correo o contraseña incorrectos.';
+  if(m.includes('already registered')) return 'Ese correo ya tiene cuenta. Entra con tu contraseña.';
+  if(m.includes('rate limit')) return 'Demasiados intentos seguidos. Espera unos minutos y vuelve a intentar.';
+  if(m.includes('email not confirmed')) return 'Tu cuenta está sin confirmar. Escríbele a tu mentor.';
+  if(m.includes('password')) return 'La contraseña debe tener al menos ' + MIN_PASSWORD + ' caracteres.';
+  return 'No pudimos continuar: ' + (error && error.message || 'error desconocido');
+}
+
+function setAuthMode(mode){
+  authMode = mode;
+  const signup = mode === 'signup';
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  el('nameField').hidden = !signup;
+  el('authTitle').textContent = signup ? 'Crea tu cuenta' : 'Entra a tu ruta';
+  el('authLead').textContent = signup
+    ? 'Tu correo y una contraseña. Con eso tu avance queda guardado y lo recuperas desde cualquier dispositivo.'
+    : 'Escribe tu correo y tu contraseña. Tu avance te sigue en cualquier dispositivo.';
+  el('authSubmit').textContent = signup ? 'Crear mi cuenta' : 'Entrar';
+  el('authPassword').autocomplete = signup ? 'new-password' : 'current-password';
+  el('authMsg').className = 'auth-msg';
+}
+
+document.querySelectorAll('.auth-tab').forEach(b => {
+  b.addEventListener('click', () => setAuthMode(b.dataset.mode));
+});
+
 el('authForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   if(!sb){ authMessage('Falta configurar Supabase en config.js.', 'err'); return; }
 
   const email = el('authEmail').value.trim();
+  const password = el('authPassword').value;
   if(!email){ authMessage('Escribe tu correo para continuar.', 'err'); return; }
+  if(!password){ authMessage('Escribe tu contraseña para continuar.', 'err'); return; }
+  // Only the new password is measured here; an existing one is the server's call.
+  if(authMode === 'signup' && password.length < MIN_PASSWORD){
+    authMessage('Tu contraseña necesita al menos ' + MIN_PASSWORD + ' caracteres.', 'err');
+    return;
+  }
 
   const submit = el('authSubmit');
+  const label = submit.textContent;
   submit.disabled = true;
-  submit.textContent = 'Enviando…';
+  submit.textContent = 'Un momento…';
 
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.origin + window.location.pathname }
-  });
+  const { data, error } = authMode === 'signup'
+    ? await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: el('authName').value.trim() } }
+      })
+    : await sb.auth.signInWithPassword({ email, password });
 
   submit.disabled = false;
-  submit.textContent = 'Enviarme el enlace';
+  submit.textContent = label;
 
-  if(error){
-    authMessage('No pudimos enviar el enlace: ' + error.message, 'err');
-  }else{
-    authMessage('Listo. Te enviamos un enlace a ' + email + '. Ábrelo desde este mismo dispositivo. Si no lo ves, revisa tu carpeta de spam.', 'ok');
+  if(error){ authMessage(authError(error), 'err'); return; }
+
+  // With email confirmations off, signUp returns a session and onAuthStateChange
+  // takes over. If the project still has them on, say so instead of hanging.
+  if(authMode === 'signup' && !(data && data.session)){
+    authMessage('Cuenta creada. Revisa tu correo para confirmarla y vuelve a entrar.', 'ok');
   }
+});
+
+el('forgotBtn').addEventListener('click', async () => {
+  if(!sb){ authMessage('Falta configurar Supabase en config.js.', 'err'); return; }
+
+  const email = el('authEmail').value.trim();
+  if(!email){ authMessage('Escribe tu correo y vuelve a tocar "Olvidé mi contraseña".', 'err'); return; }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+
+  // Deliberately the same answer either way: it must not reveal who has an account.
+  if(error) authMessage(authError(error), 'err');
+  else authMessage('Si ese correo tiene cuenta, te enviamos un enlace para cambiar la contraseña.', 'ok');
+});
+
+function setRecoveryMode(on){
+  recoveryMode = on;
+  el('authMain').hidden = on;
+  el('recoveryPanel').hidden = !on;
+  if(on){
+    document.body.className = 'anon';
+    el('authMsg').className = 'auth-msg';
+  }
+}
+
+el('recoveryForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const password = el('newPassword').value;
+  if(password.length < MIN_PASSWORD){
+    authMessage('Tu contraseña necesita al menos ' + MIN_PASSWORD + ' caracteres.', 'err');
+    return;
+  }
+
+  const submit = el('recoverySubmit');
+  submit.disabled = true;
+  submit.textContent = 'Guardando…';
+
+  const { error } = await sb.auth.updateUser({ password });
+
+  submit.disabled = false;
+  submit.textContent = 'Guardar y entrar';
+
+  if(error){ authMessage(authError(error), 'err'); return; }
+
+  setRecoveryMode(false);
+  const { data } = await sb.auth.getSession();
+  await applySession(data.session);
 });
 
 el('logoutBtn').addEventListener('click', async () => {
@@ -811,6 +951,10 @@ let loadedFor = null;
 
 async function applySession(next){
   session = next;
+
+  // A recovery link signs the user in, but the only thing they may do first is
+  // set a new password.
+  if(recoveryMode) return;
 
   if(!session){
     loadedFor = null;
@@ -839,9 +983,16 @@ async function boot(){
     authMessage('Falta configurar Supabase: edita web/config.js con la URL y la anon key de tu proyecto.', 'err');
     return;
   }
+  // The SDK strips the hash while parsing it, so read the intent before that.
+  if(window.location.hash.includes('type=recovery')) setRecoveryMode(true);
+
   const { data } = await sb.auth.getSession();
   await applySession(data.session);
-  sb.auth.onAuthStateChange((_event, next) => { applySession(next); });
+
+  sb.auth.onAuthStateChange((event, next) => {
+    if(event === 'PASSWORD_RECOVERY'){ session = next; setRecoveryMode(true); return; }
+    applySession(next);
+  });
 }
 
 render();
