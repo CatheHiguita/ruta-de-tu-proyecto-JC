@@ -365,6 +365,7 @@
     font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dark-neutral);
   }
   .session-bar .who strong{ color:#fff; font-weight:500; }
+  a.link-btn{ line-height:1; }
   .link-btn{
     background:none; border:none; padding:0; cursor:pointer;
     font-family:'JetBrains Mono',monospace; font-size:12px;
@@ -434,6 +435,7 @@
   </div>
   <div class="session-bar" id="sessionBar" hidden>
     <span class="who mono">sesión: <strong id="sessionEmail"></strong></span>
+    <a class="link-btn" id="panelLink" href="./admin.html" hidden>panel de seguimiento</a>
     <button type="button" class="link-btn" id="logoutBtn">salir</button>
   </div>
 </header>
@@ -973,13 +975,19 @@ async function applySession(next){
   loadedFor = session.user.id;
 
   CHECKPOINTS.forEach(c => { state[c.id] = 'pending'; });
+  // Reset it per account, not per call: a token refresh must not blank it out.
+  el('panelLink').hidden = true;
   const role = await loadProfile();
 
   // Mentors land on their dashboard instead of a route they are not following.
   // `?ruta=1` is the way back: without it the panel's own link would bounce.
-  if(role === 'admin' && !new URLSearchParams(window.location.search).has('ruta')){
-    window.location.replace('./admin.html');
-    return;
+  if(role === 'admin'){
+    if(!new URLSearchParams(window.location.search).has('ruta')){
+      window.location.replace('./admin.html');
+      return;
+    }
+    // Came here on purpose, so leave the way back in reach.
+    el('panelLink').hidden = false;
   }
 
   await loadProgress();
