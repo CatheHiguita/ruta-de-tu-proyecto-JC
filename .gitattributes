@@ -1,0 +1,14 @@
+# Normalize line endings to LF inside the repository.
+#
+# Without this, saving any file from a Windows editor rewrites every line as
+# CRLF. Git then reports the whole file as changed: a one-line edit arrives in
+# review as a full-file rewrite, which buries the real change and makes the
+# history unreadable. Checkouts still honour each developer's platform.
+* text=auto eol=lf
+
+# Binary assets must never be touched by line-ending conversion.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
