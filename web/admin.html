@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de seguimiento — Jóvenes creaTIvos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600&f[]=clash-grotesk@400,500&display=swap">
+<link rel="stylesheet" href="theme.css">
+<style>
+  body.booting main, body.booting header{ visibility:hidden; }
+  body.anon main{ display:none; }
+
+  header{ background:var(--obsidian); color:#fff; padding:32px 24px 28px; position:relative; overflow:hidden; }
+  header::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(circle at 85% -10%, rgba(234,115,7,0.18), transparent 45%);
+  }
+  .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.06em; color:var(--dark-neutral); margin:0 0 10px; }
+  header h1{ font-family:'Clash Display',sans-serif; font-size:clamp(24px,4vw,32px); margin:0 0 6px; font-weight:700; }
+  header p.sub{ margin:0; color:#D8D2C8; font-size:15px; max-width:600px; line-height:1.5; }
+  .session-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:20px; position:relative; z-index:1; }
+  .session-bar .who{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dark-neutral); }
+  .session-bar .who strong{ color:#fff; font-weight:500; }
+  .link-btn{ background:none; border:none; padding:0; cursor:pointer; font-family:'JetBrains Mono',monospace;
+             font-size:12px; color:var(--orange); text-decoration:underline; text-underline-offset:2px; }
+
+  main{ max-width:1080px; margin:0 auto; padding:36px 24px 80px; }
+
+  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:32px; }
+  .kpi{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+  .kpi .k{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); margin:0 0 8px; }
+  .kpi .v{ font-family:'Clash Display',sans-serif; font-size:30px; font-weight:600; margin:0; line-height:1; }
+  .kpi.alert .v{ color:var(--orange-dim); }
+
+  h2.section{ font-family:'Clash Display',sans-serif; font-size:19px; margin:0 0 6px; font-weight:600; }
+  p.section-note{ margin:0 0 16px; font-size:13.5px; color:var(--ink-soft); line-height:1.5; max-width:640px; }
+
+  .panel{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:34px; }
+  .table-scroll{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; min-width:640px; }
+  th,td{ text-align:left; padding:13px 16px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:middle; }
+  th{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); font-weight:500;
+      text-transform:lowercase; background:var(--light); white-space:nowrap; }
+  tr:last-child td{ border-bottom:none; }
+  .who-cell strong{ display:block; font-weight:600; }
+  .who-cell span{ font-size:12px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; }
+
+  .chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px;
+         padding:3px 9px; border-radius:99px; border:1px solid var(--line); color:var(--ink-soft); }
+  .chip.avanzado{ border-color:var(--orange); color:var(--orange-dim); }
+
+  .bar{ display:flex; align-items:center; gap:10px; min-width:150px; }
+  .bar-track{ flex:1; height:6px; background:var(--line); border-radius:99px; overflow:hidden; min-width:70px; }
+  .bar-fill{ height:100%; background:var(--green); border-radius:99px; }
+  .bar-num{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+
+  .stuck-cell{ color:var(--warn-ink); font-size:13px; }
+  .stuck-cell.none{ color:var(--ink-soft); }
+  .muted{ color:var(--ink-soft); font-size:12.5px; font-family:'JetBrains Mono',monospace; }
+
+  .topic-row{ display:flex; align-items:center; gap:14px; padding:13px 16px; border-bottom:1px solid var(--line); }
+  .topic-row:last-child{ border-bottom:none; }
+  .topic-row .name{ flex:1; font-size:14px; }
+  .topic-row .count{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  .heat{ width:110px; height:6px; background:var(--line); border-radius:99px; overflow:hidden; }
+  .heat i{ display:block; height:100%; background:var(--warning); border-radius:99px; }
+  .heat.zero i{ background:var(--line); }
+
+  .empty{ padding:26px 20px; text-align:center; color:var(--ink-soft); font-size:14px; }
+
+  /* auth + denied */
+  #authGate{ position:fixed; inset:0; z-index:50; background:var(--obsidian); display:none;
+             align-items:center; justify-content:center; padding:24px; }
+  body.anon #authGate{ display:flex; }
+  .auth-card{ width:100%; max-width:420px; background:var(--card); border-radius:16px; padding:32px 28px; }
+  .auth-card h2{ font-family:'Clash Display',sans-serif; font-size:22px; margin:0 0 8px; font-weight:600; }
+  .auth-card p.lead{ margin:0 0 20px; font-size:14.5px; line-height:1.55; color:var(--ink-soft); }
+  .auth-card label{ display:block; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+  .auth-card input{ width:100%; font-family:'Inter',sans-serif; font-size:15px; padding:12px 14px; min-height:46px;
+                    border:1.5px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); margin-bottom:14px; }
+  .auth-card input:focus{ outline:none; border-color:var(--orange); }
+  .btn{ font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px; padding:11px 16px; min-height:44px;
+        border-radius:9px; border:1.5px solid var(--obsidian); background:#fff; color:var(--obsidian); cursor:pointer; width:100%; }
+  .btn.primary{ background:var(--orange); border-color:var(--orange); color:#1B2A4A; }
+  .auth-msg{ margin:14px 0 0; font-size:13.5px; line-height:1.5; padding:11px 13px; border-radius:9px; display:none; }
+  .auth-msg.show{ display:block; }
+  .auth-msg.ok{ background:#E7F5EC; color:#1E6B37; border:1px solid #C9EAD2; }
+  .auth-msg.err{ background:var(--warn-bg); color:var(--warn-ink); border:1px solid var(--warn-line); }
+
+  .denied{ background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink);
+           border-radius:14px; padding:22px 24px; font-size:14.5px; line-height:1.55; }
+  .denied h3{ font-family:'Clash Display',sans-serif; margin:0 0 8px; font-size:18px; }
+</style>
+</head>
+<body class="booting">
+
+<div id="authGate">
+  <div class="auth-card">
+    <p class="eyebrow mono">panel de seguimiento</p>
+    <h2 class="display">Acceso de mentores</h2>
+    <p class="lead">Escribe tu correo y te enviamos un enlace para entrar.</p>
+    <form id="authForm" novalidate>
+      <label for="authEmail">tu correo</label>
+      <input id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="nombre@sofka.com.co" required>
+      <button type="submit" class="btn primary" id="authSubmit">Enviarme el enlace</button>
+    </form>
+    <p class="auth-msg" id="authMsg"></p>
+  </div>
+</div>
+
+<header>
+  <p class="eyebrow">jóvenes crea<span style="color:var(--orange)">_</span>TIvos · 2026</p>
+  <h1 class="display">Panel de seguimiento<span style="color:var(--orange)">_</span></h1>
+  <p class="sub">Cómo va el grupo, y —más importante— dónde se están trabando.</p>
+  <div class="session-bar" id="sessionBar" hidden>
+    <span class="who mono">sesión: <strong id="sessionEmail"></strong></span>
+    <button type="button" class="link-btn" id="logoutBtn">salir</button>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/+esm';
+import { CHECKPOINTS } from './checkpoints.js';
+
+const cfg = window.SUPABASE_CONFIG || {};
+const configured = Boolean(cfg.url) && !cfg.url.includes('YOUR-PROJECT-REF');
+const sb = configured ? createClient(cfg.url, cfg.anonKey) : null;
+
+const el = (id) => document.getElementById(id);
+let session = null;
+
+// Escapes anything that reaches innerHTML. Students control their own full_name,
+// so an unescaped render here would be a stored XSS aimed straight at the
+// mentor's session -- the one account that can read the whole cohort.
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[ch]));
+
+// How many checkpoints a student's track actually contains. Mirrors the
+// visibility rule in index.html so both pages report the same denominator.
+const totalFor = (track) => CHECKPOINTS.filter(c => track === 'avanzado' || !c.avanzadoOnly).length;
+const titleOf  = (id) => (CHECKPOINTS.find(c => c.id === id) || {}).title || id;
+
+function relativeDate(iso){
+  if(!iso) return 'sin actividad';
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if(days <= 0) return 'hoy';
+  if(days === 1) return 'ayer';
+  if(days < 30) return `hace ${days} días`;
+  return new Date(iso).toLocaleDateString('es-CO');
+}
+
+function authMessage(text, kind){
+  const box = el('authMsg');
+  box.textContent = text;
+  box.className = 'auth-msg show ' + kind;
+}
+
+el('authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(!sb){ authMessage('Falta configurar Supabase en config.js.', 'err'); return; }
+  const email = el('authEmail').value.trim();
+  if(!email){ authMessage('Escribe tu correo para continuar.', 'err'); return; }
+
+  const submit = el('authSubmit');
+  submit.disabled = true; submit.textContent = 'Enviando…';
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+  });
+  submit.disabled = false; submit.textContent = 'Enviarme el enlace';
+
+  if(error) authMessage('No pudimos enviar el enlace: ' + error.message, 'err');
+  else authMessage('Listo. Revisa ' + email + ' y ábrelo desde este mismo dispositivo.', 'ok');
+});
+
+el('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); });
+
+// --------------------------------------------------------------------------
+// Data
+//
+// Note: this page is a convenience, not a security boundary. An account without
+// role = 'admin' simply gets its own rows back from RLS, so the dashboard would
+// render empty even if someone skipped the check below.
+// --------------------------------------------------------------------------
+
+async function loadDashboard(){
+  const main = el('main');
+
+  const { data: me } = await sb.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+  if(!me || me.role !== 'admin'){
+    main.innerHTML = `<div class="denied">
+      <h3>Esta cuenta no tiene acceso al panel</h3>
+      Tu usuario está registrado como estudiante. Pide a un administrador que cambie tu rol a
+      <code>admin</code> en la tabla <code>profiles</code>, o entra a tu ruta desde
+      <a href="index.html">la página principal</a>.
+    </div>`;
+    return;
+  }
+
+  const [summaryRes, progressRes] = await Promise.all([
+    sb.from('progress_summary').select('*'),
+    sb.from('progress').select('user_id, checkpoint_id, status')
+  ]);
+
+  if(summaryRes.error || progressRes.error){
+    main.innerHTML = `<div class="denied"><h3>No pudimos cargar los datos</h3>
+      ${esc((summaryRes.error || progressRes.error).message)}</div>`;
+    return;
+  }
+
+  const students = summaryRes.data || [];
+  const rows     = progressRes.data || [];
+
+  // Which checkpoint each stuck student is stuck on.
+  const stuckBy = new Map();
+  rows.filter(r => r.status === 'showingMentor')
+      .forEach(r => { if(!stuckBy.has(r.user_id)) stuckBy.set(r.user_id, r.checkpoint_id); });
+
+  const totalStudents = students.length;
+  const avg = totalStudents
+    ? Math.round(students.reduce((acc, s) => acc + (s.completed / totalFor(s.track)) * 100, 0) / totalStudents)
+    : 0;
+  const stuckCount = students.filter(s => s.stuck > 0).length;
+  const finished   = students.filter(s => s.completed >= totalFor(s.track)).length;
+
+  const kpis = `
+    <div class="kpis">
+      <div class="kpi"><p class="k">estudiantes</p><p class="v">${totalStudents}</p></div>
+      <div class="kpi"><p class="k">progreso promedio</p><p class="v">${avg}%</p></div>
+      <div class="kpi ${stuckCount ? 'alert' : ''}"><p class="k">personas trabadas</p><p class="v">${stuckCount}</p></div>
+      <div class="kpi"><p class="k">ruta completa</p><p class="v">${finished}</p></div>
+    </div>`;
+
+  // Stuck radar: how many students asked for help on each checkpoint.
+  const stuckPerTopic = CHECKPOINTS.map(c => ({
+    id: c.id,
+    title: c.title,
+    count: rows.filter(r => r.checkpoint_id === c.id && r.status === 'showingMentor').length
+  }));
+  const maxStuck = Math.max(1, ...stuckPerTopic.map(t => t.count));
+
+  const radar = `
+    <h2 class="section">Dónde se está trabando el grupo</h2>
+    <p class="section-note">Cuenta a las personas que leyeron el paso a paso y aún así pidieron ayuda.
+       Es la señal más directa de a qué tema conviene dedicarle la próxima mentoría.</p>
+    <div class="panel">
+      ${stuckPerTopic.map(t => `
+        <div class="topic-row">
+          <span class="name">${esc(t.title)}</span>
+          <span class="heat ${t.count ? '' : 'zero'}"><i style="width:${t.count / maxStuck * 100}%"></i></span>
+          <span class="count">${t.count}</span>
+        </div>`).join('')}
+    </div>`;
+
+  const sorted = [...students].sort((a, b) =>
+    (a.completed / totalFor(a.track)) - (b.completed / totalFor(b.track)));
+
+  const table = `
+    <h2 class="section">Avance por persona</h2>
+    <p class="section-note">Ordenado de menor a mayor avance, para que quien más necesita acompañamiento quede primero.</p>
+    <div class="panel"><div class="table-scroll">
+      ${totalStudents === 0
+        ? '<p class="empty">Todavía no hay estudiantes registrados.</p>'
+        : `<table>
+        <thead><tr>
+          <th>estudiante</th><th>ruta</th><th>avance</th><th>trabado en</th><th>última actividad</th>
+        </tr></thead>
+        <tbody>
+        ${sorted.map(s => {
+          const total = totalFor(s.track);
+          const pct   = Math.round((s.completed / total) * 100);
+          const stuck = stuckBy.get(s.user_id);
+          return `<tr>
+            <td class="who-cell"><strong>${esc(s.full_name) || '—'}</strong><span>${esc(s.email)}</span></td>
+            <td><span class="chip ${esc(s.track)}">${esc(s.track)}</span></td>
+            <td><div class="bar">
+              <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
+              <span class="bar-num">${s.completed}/${total}</span>
+            </div></td>
+            <td class="stuck-cell ${stuck ? '' : 'none'}">${stuck ? esc(titleOf(stuck)) : '—'}</td>
+            <td class="muted">${relativeDate(s.last_activity)}</td>
+          </tr>`;
+        }).join('')}
+        </tbody></table>`}
+    </div></div>`;
+
+  main.innerHTML = kpis + radar + table;
+}
+
+// --------------------------------------------------------------------------
+// Boot
+// --------------------------------------------------------------------------
+
+let loadedFor = null;
+
+async function applySession(next){
+  session = next;
+  if(!session){
+    loadedFor = null;
+    document.body.className = 'anon';
+    el('sessionBar').hidden = true;
+    return;
+  }
+  document.body.className = 'authed';
+  el('sessionEmail').textContent = session.user.email;
+  el('sessionBar').hidden = false;
+  if(loadedFor === session.user.id) return;
+  loadedFor = session.user.id;
+  await loadDashboard();
+}
+
+async function boot(){
+  if(!sb){
+    document.body.className = 'anon';
+    authMessage('Falta configurar Supabase: edita web/config.js con la URL y la anon key de tu proyecto.', 'err');
+    return;
+  }
+  const { data } = await sb.auth.getSession();
+  await applySession(data.session);
+  sb.auth.onAuthStateChange((_event, next) => { applySession(next); });
+}
+
+boot();
+</script>
+</body>
+</html>
