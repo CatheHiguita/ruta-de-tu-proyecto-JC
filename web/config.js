@@ -7,6 +7,6 @@
 //
 // Find both values in your Supabase dashboard under Project Settings > API.
 window.SUPABASE_CONFIG = {
-  url: 'https://YOUR-PROJECT-REF.supabase.co',
-  anonKey: 'YOUR-ANON-KEY',
+  url: 'https://qreuytxqgvmlvdhjkivq.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyZXV5dHhxZ3ZtbHZkaGpraXZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDc3NzYsImV4cCI6MjEwMjcyMzc3Nn0.za5LHL8i3a2OdGL_4e2HneYAt7bD6vg_542u23lbA7U',
 };
