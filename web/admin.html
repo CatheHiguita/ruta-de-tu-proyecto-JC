@@ -236,7 +236,8 @@ el('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut();
 
 // What the table renders from, kept out of loadDashboard so the filters can
 // repaint without refetching.
-const view = { students: [], stuckBy: new Map() };
+const view = { students: [], stuckBy: new Map(), doneBy: new Map() };
+const EMPTY_SET = new Set();
 
 async function loadDashboard(){
   const main = el('main');
@@ -312,6 +313,13 @@ async function loadDashboard(){
     (a.completed / totalFor(a.track)) - (b.completed / totalFor(b.track)));
   view.stuckBy = stuckBy;
 
+  // Which checkpoints each student has finished, for the per-topic filter.
+  view.doneBy = new Map();
+  rows.filter(r => r.status === 'done').forEach(r => {
+    if(!view.doneBy.has(r.user_id)) view.doneBy.set(r.user_id, new Set());
+    view.doneBy.get(r.user_id).add(r.checkpoint_id);
+  });
+
   const table = `
     <h2 class="section">Avance por persona</h2>
     <p class="section-note">Ordenado de menor a mayor avance, para que quien más necesita acompañamiento quede primero.</p>
@@ -322,8 +330,12 @@ async function loadDashboard(){
           <input id="filterText" type="search" autocomplete="off" placeholder="nombre o correo">
         </div>
         <div class="field">
-          <label for="filterCut">avance</label>
-          <select id="filterCut">${cutoffOptions()}</select>
+          <label for="filterState">estado</label>
+          <select id="filterState">${stateOptions()}</select>
+        </div>
+        <div class="field">
+          <label for="filterTopic">tema</label>
+          <select id="filterTopic">${topicOptions()}</select>
         </div>
         <span class="count" id="filterCount"></span>
       </div>
@@ -335,20 +347,33 @@ async function loadDashboard(){
   // The controls are rendered once and only the table is repainted, so typing
   // in the search box never costs the input its focus.
   el('filterText').addEventListener('input', renderStudents);
-  el('filterCut').addEventListener('change', renderStudents);
+  el('filterState').addEventListener('change', renderStudents);
+  el('filterTopic').addEventListener('change', renderStudents);
   renderStudents();
 }
 
-// Every cutoff the group can be split at, phrased the way a mentor reads it.
-function cutoffOptions(){
-  const max = CHECKPOINTS.length;
-  const behind = [];
-  const ahead  = [];
-  for(let n = 1; n < max; n++) behind.push(`<option value="lte:${n}">${n} o menos completados</option>`);
-  for(let n = 2; n <= max; n++) ahead.push(`<option value="gte:${n}">${n} o más completados</option>`);
-  return `<option value="">todo el grupo</option>
-    <optgroup label="van atrás">${behind.join('')}</optgroup>
-    <optgroup label="van bien">${ahead.join('')}</optgroup>`;
+// Progress states are shares of each student's own route, not raw counts, so
+// they stay comparable across rutas of different length and this list never
+// grows when checkpoints are added.
+const STATES = [
+  { id: 'none',    label: 'sin empezar',              test: (pct) => pct === 0 },
+  { id: 'behind',  label: 'va atrás (menos del 50%)', test: (pct) => pct < 50 },
+  { id: 'ontrack', label: 'en camino (50% o más)',    test: (pct) => pct >= 50 && pct < 100 },
+  { id: 'done',    label: 'completó la ruta',         test: (pct) => pct >= 100 }
+];
+
+function stateOptions(){
+  return `<option value="">todo el grupo</option>` +
+    STATES.map(st => `<option value="${st.id}">${st.label}</option>`).join('');
+}
+
+// The topic list grows with the route, but it grows in names a mentor recognises
+// -- which is the axis mentoring is actually planned on.
+function topicOptions(){
+  const names = CHECKPOINTS.map(c => `<option value="%OP%:${c.id}">${esc(c.title)}</option>`).join('');
+  return `<option value="">cualquier tema</option>
+    <optgroup label="todavía no completa">${names.replace(/%OP%/g, 'pending')}</optgroup>
+    <optgroup label="ya completó">${names.replace(/%OP%/g, 'done')}</optgroup>`;
 }
 
 // Accent- and case-insensitive: "herrera" has to find "Herrera Flórez".
@@ -359,16 +384,31 @@ const foldText = (value) => (value || '')
   .toLowerCase();
 
 function filterStudents(){
-  const term = foldText(el('filterText').value.trim());
-  const cut  = el('filterCut').value;
+  const term  = foldText(el('filterText').value.trim());
+  const state = el('filterState').value;
+  const topic = el('filterTopic').value;
 
   return view.students.filter(s => {
     if(term && !foldText(s.full_name).includes(term) && !foldText(s.email).includes(term)) return false;
-    if(!cut) return true;
 
-    const [op, raw] = cut.split(':');
-    const n = Number(raw);
-    return op === 'lte' ? s.completed <= n : s.completed >= n;
+    if(state){
+      const rule = STATES.find(st => st.id === state);
+      if(rule && !rule.test((s.completed / totalFor(s.track)) * 100)) return false;
+    }
+
+    if(topic){
+      const [op, id] = topic.split(':');
+      const checkpoint = CHECKPOINTS.find(c => c.id === id);
+
+      // A topic outside this student's ruta is not something they can be behind
+      // on, so they drop out of the answer either way.
+      if(!checkpoint || (checkpoint.avanzadoOnly && s.track !== 'avanzado')) return false;
+
+      const isDone = (view.doneBy.get(s.user_id) || EMPTY_SET).has(id);
+      if(op === 'done' ? !isDone : isDone) return false;
+    }
+
+    return true;
   });
 }
 
